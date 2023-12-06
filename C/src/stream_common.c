@@ -2,10 +2,12 @@
 #include "ensivorbis.h"
 #include "stream_common.h"
 #include "synchro.h"
+#include <pthread.h>
 #include <assert.h>
 #include <time.h>
 
 bool fini = false;
+pthread_t theora2sdlthread;
 
 struct timespec datedebut;
 
@@ -65,6 +67,7 @@ struct streamstate *getStreamState(ogg_sync_state *pstate, ogg_page *ppage,
 
     // ADD Your code HERE
     // proteger l'accès à la hashmap
+      pthread_mutex_lock(&mutex_stream);
 
     if (type == TYPE_THEORA)
       HASH_ADD_INT(theorastrstate, serial, s);
@@ -73,7 +76,7 @@ struct streamstate *getStreamState(ogg_sync_state *pstate, ogg_page *ppage,
 
   } else {
     // proteger l'accès à la hashmap
-
+      pthread_mutex_lock(&mutex_stream);
     if (type == TYPE_THEORA)
       HASH_FIND_INT(theorastrstate, &serial, s);
     else
@@ -82,6 +85,7 @@ struct streamstate *getStreamState(ogg_sync_state *pstate, ogg_page *ppage,
     // END of your code modification HERE
     assert(s != NULL);
   }
+    pthread_mutex_unlock(&mutex_stream);
   assert(s != NULL);
 
   return s;
@@ -137,6 +141,10 @@ int decodeAllHeaders(int respac, struct streamstate *s, enum streamtype type) {
       if (type == TYPE_THEORA) {
 	// BEGIN your modification HERE
         // lancement du thread gérant l'affichage (draw2SDL)
+        if (pthread_create(&theora2sdlthread, NULL, draw2SDL, (void *) &(s->serial)) != 0) {
+            perror("Error in creating thread");
+            exit(EXIT_FAILURE);
+        }
         // inserer votre code ici !!
         // END of your modification
         assert(res == 0);

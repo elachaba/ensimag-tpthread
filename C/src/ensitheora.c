@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 int windowsx = 0;
 int windowsy = 0;
@@ -29,7 +30,7 @@ void *draw2SDL(void *arg) {
   screen = SDL_CreateWindow("Ensimag lecteur ogg/theora/vorbis",
                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                             windowsx, windowsy, 0);
-  renderer = SDL_CreateRenderer(screen, -1, 0);
+  renderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_SOFTWARE);
 
   assert(screen);
   assert(renderer);
@@ -53,11 +54,13 @@ void *draw2SDL(void *arg) {
   signalerFenetreEtTexturePrete();
 
   // ADD Your code HERE
+    pthread_mutex_lock(&mutex_stream);
   /* Protéger l'accès à la hashmap */
 
   HASH_FIND_INT(theorastrstate, &serial, s);
 
   // END of your modification HERE
+    pthread_mutex_unlock(&mutex_stream);
 
   assert(s->strtype == TYPE_THEORA);
 
